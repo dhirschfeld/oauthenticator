@@ -2,13 +2,14 @@
 Custom Authenticator to use Azure AD with JupyterHub
 """
 
+import json
 import os
 import urllib
 from distutils.version import LooseVersion as V
 
 import jwt
 from jupyterhub.auth import LocalAuthenticator
-from tornado.httpclient import HTTPRequest
+from tornado.httpclient import AsyncHTTPClient, HTTPRequest
 from traitlets import Unicode, default
 
 from .oauth2 import OAuthenticator
@@ -45,6 +46,46 @@ class AzureAdOAuthenticator(OAuthenticator):
     @default("token_url")
     def _token_url_default(self):
         return f"https://login.microsoftonline.com/{self.tenant_id}/oauth2/v2.0/token"
+
+    async def get_user_attributes(self, oid):
+        http_client = AsyncHTTPClient()
+
+        params = dict(
+            scope=["https://graph.microsoft.com/.default"],
+            client_secret=self.client_secret,
+            grant_type="client_credentials",
+            client_id=self.client_id,
+        )
+        data = urllib.parse.urlencode(
+            params, doseq=True, encoding='utf-8', safe='='
+        )
+        headers = {
+            'Content-Type':
+            'application/x-www-form-urlencoded; charset=UTF-8'
+        }
+        req = HTTPRequest(
+            self.token_url,
+            method="POST",
+            headers=headers,
+            body=data
+        )
+        resp = await http_client.fetch(req)
+        resp_json = json.loads(resp.body.decode('utf8', 'replace'))
+        access_token = resp_json["access_token"]
+
+        headers = {
+            'Authorization':
+            'Bearer {0}'.format(access_token)
+        }
+        req = HTTPRequest(
+            f"https://graph.microsoft.com/v1.0/users/{oid}",
+            method="GET",
+            headers=headers,
+        )
+        resp = await http_client.fetch(req)
+        resp_json = json.loads(resp.body.decode('utf8', 'replace'))
+        return resp_json
+
 
     async def authenticate(self, handler, data=None):
         code = handler.get_argument("code")
