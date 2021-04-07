@@ -40,11 +40,11 @@ class AzureAdOAuthenticator(OAuthenticator):
 
     @default("authorize_url")
     def _authorize_url_default(self):
-        return 'https://login.microsoftonline.com/{0}/oauth2/authorize'.format(self.tenant_id)
+        return f"https://login.microsoftonline.com/{self.tenant_id}/oauth2/v2.0/authorize"
 
     @default("token_url")
     def _token_url_default(self):
-        return 'https://login.microsoftonline.com/{0}/oauth2/token'.format(self.tenant_id)
+        return f"https://login.microsoftonline.com/{self.tenant_id}/oauth2/v2.0/token"
 
     async def authenticate(self, handler, data=None):
         code = handler.get_argument("code")
