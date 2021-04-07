@@ -21,10 +21,10 @@ PYJWT_2 = V(jwt.__version__) >= V("2.0")
 
 class AzureAdOAuthenticator(OAuthenticator):
     login_service = Unicode(
-		os.environ.get('LOGIN_SERVICE', 'Azure AD'),
-		config=True,
-		help="""Azure AD domain name string, e.g. My College"""
-	)
+        os.environ.get('LOGIN_SERVICE', 'Azure AD'),
+        config=True,
+        help="""Azure AD domain name string, e.g. My College"""
+    )
 
     tenant_id = Unicode(config=True, help="The Azure Active Directory Tenant ID")
 
@@ -87,6 +87,7 @@ class AzureAdOAuthenticator(OAuthenticator):
             # pyjwt 1.x
             decoded = jwt.decode(id_token, verify=False)
 
+        self.log.warning(repr(decoded))
         userdict = {"name": decoded[self.username_claim]}
         userdict["auth_state"] = auth_state = {}
         auth_state['access_token'] = access_token
