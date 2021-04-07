@@ -29,6 +29,8 @@ class AzureAdOAuthenticator(OAuthenticator):
 
     tenant_id = Unicode(config=True, help="The Azure Active Directory Tenant ID")
 
+    access_token_version = 1
+
     @default('tenant_id')
     def _tenant_id_default(self):
         return os.environ.get('AAD_TENANT_ID', '')
@@ -41,11 +43,21 @@ class AzureAdOAuthenticator(OAuthenticator):
 
     @default("authorize_url")
     def _authorize_url_default(self):
-        return f"https://login.microsoftonline.com/{self.tenant_id}/oauth2/v2.0/authorize"
+        if self.access_token_version == 1:
+            return f"https://login.microsoftonline.com/{self.tenant_id}/oauth2/authorize"
+        elif self.access_token_version == 2:
+            return f"https://login.microsoftonline.com/{self.tenant_id}/oauth2/v2.0/authorize"
+        else:
+            raise ValueError('Invalid token version!')
 
     @default("token_url")
     def _token_url_default(self):
-        return f"https://login.microsoftonline.com/{self.tenant_id}/oauth2/v2.0/token"
+        if self.access_token_version == 1:
+            return f"https://login.microsoftonline.com/{self.tenant_id}/oauth2/token"
+        elif self.access_token_version == 2:
+            return f"https://login.microsoftonline.com/{self.tenant_id}/oauth2/v2.0/token"
+        else:
+            raise ValueError('Invalid token version!')
 
     async def get_user_attributes(self, oid):
         http_client = AsyncHTTPClient()
